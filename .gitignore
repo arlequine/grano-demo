@@ -3,7 +3,6 @@ dist/
 .env
 .env.local
 .env.development
-.env.production
 *.log
 .vercel/
 .playwright-mcp/
