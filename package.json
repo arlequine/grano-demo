@@ -1,0 +1,12 @@
+{
+  "name": "grano-demo",
+  "private": true,
+  "scripts": {
+    "setup": "npm install && npm install --prefix api && npm install --prefix web",
+    "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors yellow,cyan \"npm run dev --prefix api\" \"npm run dev --prefix web\"",
+    "test": "npm test --prefix api"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "huila",
+    "name": "Huila",
+    "region": "Huila, Colombia",
+    "process": "Lavado",
+    "roast": "Medio",
+    "notes": [
+      "Panela",
+      "Durazno",
+      "Cacao"
+    ],
+    "priceCents": 32000,
+    "grams": 340
+  },
+  {
+    "id": "chiapas",
+    "name": "Chiapas",
+    "region": "Sierra Madre, Chiapas, México",
+    "process": "Lavado",
+    "roast": "Medio",
+    "notes": [
+      "Chocolate de leche",
+      "Nuez",
+      "Caramelo"
+    ],
+    "priceCents": 29000,
+    "grams": 340
+  },
+  {
+    "id": "veracruz",
+    "name": "Veracruz",
+    "region": "Coatepec, Veracruz, México",
+    "process": "Honey",
+    "roast": "Medio-oscuro",
+    "notes": [
+      "Piloncillo",
+      "Almendra",
+      "Especias"
+    ],
+    "priceCents": 28000,
+    "grams": 340
+  },
+  {
+    "id": "oaxaca",
+    "name": "Oaxaca",
+    "region": "Pluma Hidalgo, Oaxaca, México",
+    "process": "Natural",
+    "roast": "Claro",
+    "notes": [
+      "Frutos rojos",
+      "Jazmín",
+      "Miel"
+    ],
+    "priceCents": 31000,
+    "grams": 340
+  },
+  {
+    "id": "narino",
+    "name": "Nariño",
+    "region": "La Unión, Nariño, Colombia",
+    "process": "Lavado",
+    "roast": "Claro",
+    "notes": [
+      "Mandarina",
+      "Flor de azahar",
+      "Panela"
+    ],
+    "priceCents": 34000,
+    "grams": 340
+  },
+  {
+    "id": "tolima",
+    "name": "Tolima",
+    "region": "Planadas, Tolima, Colombia",
+    "process": "Lavado",
+    "roast": "Medio",
+    "notes": [
+      "Manzana verde",
+      "Caña",
+      "Chocolate"
+    ],
+    "priceCents": 30000,
+    "grams": 340
+  }
+]
