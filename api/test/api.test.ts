@@ -45,6 +45,7 @@ describe('GET /api/products', () => {
       notes: ['Panela', 'Durazno', 'Cacao'],
       priceCents: 32000,
       grams: 340,
+      stock: 12,
     });
   });
 });

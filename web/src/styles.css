@@ -772,3 +772,52 @@ textarea[aria-invalid='true'] {
     transition: none !important;
   }
 }
+
+/* Inventario */
+.product-card {
+  position: relative;
+}
+
+.stock-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgb(43 29 20 / 20%);
+}
+
+.stock-badge-low {
+  background: var(--caramel);
+  color: #fff;
+}
+
+.stock-badge-out {
+  background: var(--espresso);
+  color: var(--cream);
+}
+
+.product-card.is-sold-out .product-bag {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+
+.product-card.is-sold-out .product-price {
+  color: var(--muted);
+}
+
+.stock-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgb(184 115 58 / 14%);
+  color: var(--caramel-dark);
+  font-size: 0.875rem;
+}
+
+.coupon-row input::placeholder {
+  text-transform: none;
+}

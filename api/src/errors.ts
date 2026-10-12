@@ -1,4 +1,11 @@
-export type ErrorDetail = { path: string; message: string };
+export type ErrorDetail = {
+  path: string;
+  message: string;
+  // Solo en OUT_OF_STOCK.
+  productId?: string;
+  requested?: number;
+  available?: number;
+};
 
 export class AppError extends Error {
   constructor(

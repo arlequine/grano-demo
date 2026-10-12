@@ -8,14 +8,21 @@ type Props = {
   onAdd: () => void;
 };
 
+// A partir de cuántas bolsas se avisa que quedan pocas.
+const LOW_STOCK = 3;
+
 // Clase de color de la bolsa según el tueste: "Medio-oscuro" → "roast-medio-oscuro".
 function roastClass(roast: string): string {
   return `roast-${roast.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]+/g, '-')}`;
 }
 
 export function ProductCard({ product, quantityInCart, canAdd, onAdd }: Props) {
+  const soldOut = product.stock === 0;
+  const lowStock = !soldOut && product.stock <= LOW_STOCK;
   return (
-    <article className="product-card">
+    <article className={`product-card${soldOut ? ' is-sold-out' : ''}`}>
+      {soldOut && <span className="stock-badge stock-badge-out">Agotado</span>}
+      {lowStock && <span className="stock-badge stock-badge-low">¡Quedan {product.stock}!</span>}
       <div className={`product-bag ${roastClass(product.roast)}`} aria-hidden="true">
         <span className="bag-label">
           <span className="bag-brand">grano</span>
@@ -47,8 +54,8 @@ export function ProductCard({ product, quantityInCart, canAdd, onAdd }: Props) {
             {formatMoney(product.priceCents)}
             <span> / bolsa de {product.grams} g</span>
           </p>
-          <button type="button" className="button button-primary" onClick={onAdd} disabled={!canAdd}>
-            {quantityInCart > 0 ? `Agregar otra (${quantityInCart})` : 'Agregar'}
+          <button type="button" className="button button-primary" onClick={onAdd} disabled={soldOut || !canAdd}>
+            {soldOut ? 'Agotado' : quantityInCart > 0 ? `Agregar otra (${quantityInCart})` : 'Agregar'}
           </button>
         </div>
       </div>

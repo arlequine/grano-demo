@@ -9,6 +9,7 @@ export type Product = {
   notes: string[];
   priceCents: number;
   grams: number;
+  stock: number;
 };
 
 export type CartItem = { productId: string; quantity: number };
@@ -50,4 +51,11 @@ export type Order = {
   quote: Quote;
 };
 
-export type ErrorDetail = { path: string; message: string };
+export type ErrorDetail = {
+  path: string;
+  message: string;
+  // Solo en OUT_OF_STOCK.
+  productId?: string;
+  requested?: number;
+  available?: number;
+};

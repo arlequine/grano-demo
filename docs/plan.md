@@ -29,6 +29,7 @@ grano-demo/
 - **Montos en centavos enteros** (`930.00 MXN` → `93000`) en la API y en el contrato, para evitar errores de punto flotante. El frontend los formatea con `Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' })`.
 - **Catálogo en JSON.** `npm run catalog` convierte `docs/catalogo.csv` en `api/src/data/catalog.json`, y una prueba verifica que coincidan. Así la API no depende de leer archivos fuera de `api/` en Render.
 - **Pedidos en memoria (`Map`).** No hay base de datos en v1, así que los pedidos se pierden si la API se reinicia. Es aceptable para la demo; ver los riesgos en la sección 5.
+- **Inventario en memoria (v1.1).** El stock inicial está en `api/src/data/stock.json` (aparte del catálogo, porque cambia con cada venta) e `inventory.ts` lo lleva en un `Map`. Cotizar verifica el stock; crear un pedido lo verifica y lo descuenta todo o nada. Al reiniciar, el stock vuelve a los valores iniciales.
 - **Sin router ni librería de estado.** La vista activa es un `useState` en `App`.
 - **CORS:** se permiten los orígenes de `ALLOWED_ORIGINS`, una lista separada por comas. `*` solo admite cualquier origen; dentro de un patrón (`https://*.vercel.app`), `*` equivale a cualquier texto sin `/`. Si la variable no existe, se usa `http://localhost:5173`.
 - **Dependencias nuevas:** `cors` (la web y la API están en dominios distintos) y `concurrently` en la raíz (para que `npm run dev` levante ambas). Las demás vienen del stack de CLAUDE.md.
@@ -50,7 +51,7 @@ Base: `VITE_API_URL` (en desarrollo, `http://localhost:3001`). JSON en todas las
   "id": "huila", "name": "Huila", "region": "Huila, Colombia",
   "process": "Lavado", "roast": "Medio",
   "notes": ["Panela", "Durazno", "Cacao"],
-  "priceCents": 32000, "grams": 340
+  "priceCents": 32000, "grams": 340, "stock": 12
 } ] }
 ```
 
@@ -100,6 +101,15 @@ Cuerpo: el mismo de `quote` más los datos de envío.
 ```
 - La API recalcula todo con el catálogo y nunca usa montos enviados por el cliente.
 - `orderId` es `GR-` seguido de 8 caracteres en mayúsculas sin ambigüedad (sin 0/O ni 1/I) generados con `crypto`. Si ya existe, se genera otro.
+- Al crearse el pedido se descuenta el stock de cada café. Si falta stock no se descuenta nada.
+
+### Stock (v1.1)
+`quote` y `orders` responden `409 OUT_OF_STOCK` si la cantidad pedida de un café (sumando líneas repetidas) supera su stock. Hay un `details` por cada café que no alcanza:
+```json
+{ "error": { "code": "OUT_OF_STOCK", "message": "No hay suficiente stock para tu pedido",
+  "details": [ { "path": "items.oaxaca", "message": "Solo quedan 3 de Oaxaca", "productId": "oaxaca", "requested": 4, "available": 3 } ] } }
+```
+Orden de validación: 400 (formato) → 422 (producto desconocido; cupón inválido en `orders`) → 409 (stock).
 
 ### Errores
 Todas las respuestas de error tienen la forma `{ "error": { "code": "...", "message": "...", "details"?: [...] } }`. Los `message` están en español.
@@ -108,6 +118,7 @@ Todas las respuestas de error tienen la forma `{ "error": { "code": "...", "mess
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Cuerpo que no es JSON, `items` vacío, cantidad fuera de rango, `customer` incompleto o correo inválido. `details` trae `{ path, message }` por campo. |
 | 422 | `UNKNOWN_PRODUCT` | Un `productId` no existe en el catálogo. |
+| 409 | `OUT_OF_STOCK` | Se pide más de lo que hay de algún café (v1.1). |
 | 422 | `INVALID_COUPON` | Solo en `POST /api/orders`: el cupón no es válido. Se rechaza para que no se cree un pedido con un cupón que la persona creyó aplicado. |
 | 404 | `NOT_FOUND` | La ruta no existe. |
 | 500 | `INTERNAL_ERROR` | Error inesperado. Se registra en el log y no se expone el detalle. |
@@ -157,7 +168,10 @@ Cada tarea termina con sus pruebas en verde. Antes de cerrar la v1 se corren `np
 14. **Verificación completa:** pruebas y builds, y un recorrido manual del caso de referencia que debe dar $837.00.
 15. **Despliegue (solo con aprobación de la persona):** crear `render.yaml` y configurar Vercel (root `web`, `VITE_API_URL`; `ALLOWED_ORIGINS` en Render). CLAUDE.md pide no tocar el despliegue salvo que se pida.
 
+16. **Inventario (v1.1):** `stock.json` e `inventory.ts`, `stock` en `GET /api/products`, `409 OUT_OF_STOCK` en `quote` y `orders`, y descuento al crear el pedido. En la web: «Agotado», «¡Quedan N!» (3 o menos), el + limitado al stock y el ajuste del carrito ante un 409.
+
 ## 5. Riesgos y supuestos
 - **Pedidos en memoria:** el plan gratuito de Render reinicia o duerme la instancia, así que los pedidos se pierden. Si se quiere medir la meta de 100 pedidos, hará falta persistencia (fuera de v1).
+- **Stock en memoria:** cada reinicio de Render devuelve el stock a los valores iniciales, y el carrito no aparta bolsas: dos personas pueden tener la última en el carrito y solo la primera en confirmar se la lleva (la otra recibe 409).
 - **Arranque en frío de Render:** la primera llamada puede tardar varios segundos y no cumplir los < 300 ms del PRD. La web debe mostrar un estado de «cargando».
 - **Límites que fijé yo:** 20 bolsas por línea, 6 líneas y el formato del teléfono no vienen del PVB ni del PRD. Se pueden ajustar.

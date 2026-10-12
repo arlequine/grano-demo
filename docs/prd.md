@@ -36,6 +36,13 @@ Validar la demanda con **100 pedidos en el primer mes**. Métricas de apoyo: tic
 - Al confirmar, la API recalcula el total, registra el pedido y devuelve un número de pedido único, que se muestra junto con el resumen.
 - Si la API rechaza el pedido, se muestra el error y el carrito se conserva.
 
+**H6 · Inventario (v1.1).** Como bebedor curioso, quiero saber qué cafés hay y cuántos quedan para no pedir algo que no me pueden enviar.
+- Stock inicial por café: Huila 12, Chiapas 8, Veracruz 10, Oaxaca 3, Nariño 0, Tolima 6.
+- Un café sin stock muestra «Agotado» y su botón queda deshabilitado; con 3 bolsas o menos muestra «¡Quedan N!».
+- La cantidad en el carrito no puede superar el stock disponible.
+- Si una cotización o un pedido pide más de lo que hay, la API responde 409 `OUT_OF_STOCK`; la tienda ajusta el carrito a lo disponible y lo avisa.
+- Al crear un pedido se descuenta el stock; cotizar no lo descuenta.
+
 ## Caso de referencia para QA
 Carrito: 2 × Huila ($320) + 1 × Chiapas ($290), cupón BIENVENIDA10.
 
@@ -58,4 +65,4 @@ Control: el mismo carrito sin cupón da subtotal $930, envío $0 y total $930.
 - **Calidad:** las reglas de precio tienen pruebas automatizadas que incluyen el caso de referencia y el límite de $600.
 
 ## Fuera de alcance (v1)
-Pagos reales, cuentas de usuario, suscripciones y panel del microtostador. Al no haber cuentas, v1 **no verifica** que BIENVENIDA10 se use solo en la primera compra. Tampoco: inventario, cálculo de envío por zona, otros cupones ni notificaciones por correo.
+Pagos reales, cuentas de usuario, suscripciones y panel del microtostador. Al no haber cuentas, v1 **no verifica** que BIENVENIDA10 se use solo en la primera compra. Tampoco: reposición de stock o reservas en el carrito, cálculo de envío por zona, otros cupones ni notificaciones por correo.

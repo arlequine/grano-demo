@@ -5,12 +5,12 @@ type Props = {
   items: CartItem[];
   products: Product[];
   quote: Quote | null;
-  maxQuantity: number;
+  maxQuantityFor: (productId: string) => number;
   readOnly?: boolean;
   onChangeQuantity?: (productId: string, quantity: number) => void;
 };
 
-export function CartLines({ items, products, quote, maxQuantity, readOnly = false, onChangeQuantity }: Props) {
+export function CartLines({ items, products, quote, maxQuantityFor, readOnly = false, onChangeQuantity }: Props) {
   return (
     <ul className="cart-lines">
       {items.map(({ productId, quantity }) => {
@@ -38,7 +38,7 @@ export function CartLines({ items, products, quote, maxQuantity, readOnly = fals
                 <button
                   type="button"
                   onClick={() => onChangeQuantity?.(productId, quantity + 1)}
-                  disabled={quantity >= maxQuantity}
+                  disabled={quantity >= maxQuantityFor(productId)}
                   aria-label={`Agregar una bolsa de ${name}`}
                 >
                   +

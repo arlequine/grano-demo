@@ -9,7 +9,7 @@ import { Totals } from './components/Totals';
 import { formatMoney } from './format';
 import type { CartItem, Customer, Order, Product, Quote } from './types';
 
-// Mismo límite que valida la API (docs/plan.md §2).
+// Mismo límite por línea que valida la API (docs/plan.md §2); además, nunca más que el stock.
 const MAX_QUANTITY = 20;
 
 type Step = 'cart' | 'checkout' | 'confirmed';
@@ -33,6 +33,7 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [stockNotice, setStockNotice] = useState<string | null>(null);
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quotePending, setQuotePending] = useState(false);
@@ -74,7 +75,12 @@ export default function App() {
           }
         })
         .catch((err: Error) => {
-          if (!controller.signal.aborted) setQuoteError(err.message);
+          if (controller.signal.aborted) return;
+          if (err instanceof ApiError && err.code === 'OUT_OF_STOCK') {
+            adjustForStock(err);
+          } else {
+            setQuoteError(err.message);
+          }
         })
         .finally(() => {
           if (!controller.signal.aborted) setQuotePending(false);
@@ -90,15 +96,43 @@ export default function App() {
     return cart.find((item) => item.productId === productId)?.quantity ?? 0;
   }
 
+  function maxQuantityFor(productId: string): number {
+    const stock = products?.find((product) => product.id === productId)?.stock ?? 0;
+    return Math.min(stock, MAX_QUANTITY);
+  }
+
   function setQuantity(productId: string, quantity: number) {
+    setStockNotice(null);
     setCart((current) => {
-      if (quantity <= 0) return current.filter((item) => item.productId !== productId);
-      const bounded = Math.min(quantity, MAX_QUANTITY);
+      const bounded = Math.min(quantity, maxQuantityFor(productId));
+      if (bounded <= 0) return current.filter((item) => item.productId !== productId);
       if (!current.some((item) => item.productId === productId)) {
         return [...current, { productId, quantity: bounded }];
       }
       return current.map((item) => (item.productId === productId ? { ...item, quantity: bounded } : item));
     });
+  }
+
+  // Otro pedido se llevó el stock mientras armabas el carrito: la API responde 409 con lo
+  // que queda de cada café, ajustamos las cantidades y refrescamos el catálogo.
+  function adjustForStock(err: ApiError) {
+    const available = new Map<string, number>();
+    for (const detail of err.details) {
+      if (detail.productId !== undefined && detail.available !== undefined) {
+        available.set(detail.productId, detail.available);
+      }
+    }
+    setCart((current) =>
+      current
+        .map((item) =>
+          available.has(item.productId)
+            ? { ...item, quantity: Math.min(item.quantity, available.get(item.productId)!) }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
+    );
+    setStockNotice(`Ajustamos tu carrito: ${err.details.map((detail) => detail.message).join('. ')}.`);
+    loadProducts();
   }
 
   function addToCart(productId: string) {
@@ -127,9 +161,14 @@ export default function App() {
       setCart([]);
       setAppliedCoupon(null);
       setCouponError(null);
+      setStockNotice(null);
+      loadProducts();
       document.getElementById('carrito')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
-      if (err instanceof ApiError) {
+      if (err instanceof ApiError && err.code === 'OUT_OF_STOCK') {
+        adjustForStock(err);
+        setStep('cart');
+      } else if (err instanceof ApiError) {
         const errors = fieldErrorsFrom(err);
         setFieldErrors(errors);
         setOrderError(Object.keys(errors).length > 0 ? 'Revisa los datos marcados.' : err.message);
@@ -191,7 +230,7 @@ export default function App() {
                   key={product.id}
                   product={product}
                   quantityInCart={quantityOf(product.id)}
-                  canAdd={quantityOf(product.id) < MAX_QUANTITY}
+                  canAdd={quantityOf(product.id) < maxQuantityFor(product.id)}
                   onAdd={() => addToCart(product.id)}
                 />
               ))}
@@ -209,6 +248,12 @@ export default function App() {
                 {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
               </h2>
 
+              {stockNotice && (
+                <p className="stock-notice" role="status">
+                  {stockNotice}
+                </p>
+              )}
+
               {cart.length === 0 ? (
                 <p className="cart-empty">
                   Tu carrito está vacío. Agrega una bolsa para ver el total con envío.
@@ -219,7 +264,7 @@ export default function App() {
                     items={cart}
                     products={products ?? []}
                     quote={quote}
-                    maxQuantity={MAX_QUANTITY}
+                    maxQuantityFor={maxQuantityFor}
                     readOnly={step === 'checkout'}
                     onChangeQuantity={setQuantity}
                   />

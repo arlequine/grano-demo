@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { products } from './catalog.js';
 import { corsMiddleware } from './cors.js';
 import { AppError } from './errors.js';
+import { Inventory } from './inventory.js';
 import { OrderStore } from './orders.js';
 import { quote } from './pricing.js';
 import { orderRequestSchema, quoteRequestSchema } from './schemas.js';
@@ -10,9 +11,14 @@ import { orderRequestSchema, quoteRequestSchema } from './schemas.js';
 export type AppOptions = {
   allowedOrigins?: string[];
   orderStore?: OrderStore;
+  inventory?: Inventory;
 };
 
-export function createApp({ allowedOrigins = [], orderStore = new OrderStore() }: AppOptions = {}) {
+export function createApp({
+  allowedOrigins = [],
+  orderStore = new OrderStore(),
+  inventory = new Inventory(),
+}: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -24,12 +30,14 @@ export function createApp({ allowedOrigins = [], orderStore = new OrderStore() }
   });
 
   app.get('/api/products', (_req, res) => {
-    res.json({ products });
+    res.json({ products: products.map((product) => ({ ...product, stock: inventory.available(product.id) })) });
   });
 
   app.post('/api/cart/quote', (req, res) => {
     const { items, couponCode } = quoteRequestSchema.parse(req.body);
-    res.json(quote(items, couponCode));
+    const result = quote(items, couponCode);
+    inventory.assertAvailable(items);
+    res.json(result);
   });
 
   app.post('/api/orders', (req, res) => {
@@ -40,6 +48,7 @@ export function createApp({ allowedOrigins = [], orderStore = new OrderStore() }
         { path: 'couponCode', message: 'Cupón no válido' },
       ]);
     }
+    inventory.take(items);
     res.status(201).json(orderStore.create(customer, orderQuote));
   });
 
